@@ -33,7 +33,7 @@ public partial class CameraRenderer
         Setup();
         lighting.Setup(context, cullingResults);
         DrawVisiableGeometry();
-        DrawUnsupportedShaders();
+        // DrawUnsupportedShaders();
         DrawGizmos();
         Submit();
     }
@@ -48,7 +48,6 @@ public partial class CameraRenderer
             flags <= CameraClearFlags.Color ? camera.backgroundColor.linear : Color.clear);
         buffer.BeginSample(SampleName);
         ExecuteBuffer();
-        // set view and projection matrix
     }
 
     void DrawVisiableGeometry()
@@ -56,15 +55,15 @@ public partial class CameraRenderer
         var sortingSettings = new SortingSettings(camera) {
             criteria = SortingCriteria.CommonOpaque
         };
-        var drawingSettings = new DrawingSettings(
-            unlitShaderTagId, sortingSettings);
-
+        var drawingSettings = new DrawingSettings();
+        drawingSettings.sortingSettings = sortingSettings;
+        drawingSettings.SetShaderPassName(0, unlitShaderTagId);
         drawingSettings.SetShaderPassName(1, litShaderTagId);
 
         var filteringSettings = new FilteringSettings(RenderQueueRange.opaque);
-
+        
         context.DrawRenderers(
-            cullingResults, ref drawingSettings, ref filteringSettings    
+            cullingResults, ref drawingSettings, ref filteringSettings
         );
 
         context.DrawSkybox(camera);
@@ -72,7 +71,7 @@ public partial class CameraRenderer
         sortingSettings.criteria = SortingCriteria.CommonTransparent;
         drawingSettings.sortingSettings = sortingSettings;
         filteringSettings.renderQueueRange = RenderQueueRange.transparent;
-        
+
         context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings );
     }
 
