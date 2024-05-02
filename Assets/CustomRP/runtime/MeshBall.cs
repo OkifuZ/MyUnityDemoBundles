@@ -30,7 +30,12 @@ public class MeshBall : MonoBehaviour
     
     private void Awake()
     {
-        Debug.Log("here");
+        
+    }
+
+    // Start is called before the first frame update
+    void Start()
+    {
         for (int i = 0; i < matrices.Length; i++)
         {
             matrices[i] = Matrix4x4.TRS(
@@ -46,16 +51,9 @@ public class MeshBall : MonoBehaviour
         }
     }
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
     // Update is called once per frame
     void Update()
     {
-        Debug.Log("here2");
         if (block == null)
         {
             block = new MaterialPropertyBlock();
