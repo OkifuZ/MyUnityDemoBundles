@@ -3,6 +3,7 @@
 
 #include "../ShaderLibrary/Common.hlsl"
 #include "../ShaderLibrary/Surface.hlsl"
+#include "../ShaderLibrary/Shadows.hlsl" 
 #include "../ShaderLibrary/Light.hlsl"
 #include "../ShaderLibrary/BRDF.hlsl"
 #include "../ShaderLibrary/Lighting.hlsl"
@@ -51,6 +52,7 @@ Varyings LitPassVertex (Attributes input) {
     UNITY_TRANSFER_INSTANCE_ID(input, output);
     output.positionWS = TransformObjectToWorld(input.positionOS);
 	output.positionCS = TransformWorldToHClip(output.positionWS);
+
     float4 baseST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseMap_ST);
 	output.baseUV = input.baseUV * baseST.xy + baseST.zw;
     output.normalWS = TransformObjectToWorldNormal(input.normalOS);
@@ -70,8 +72,10 @@ float4 LitPassFragment (Varyings input) : SV_TARGET0 {
 	#endif
 
     Surface surface;
+    surface.position = input.positionWS;
     surface.normal = normalize(input.normalWS);
     surface.viewDirection = normalize(_WorldSpaceCameraPos - input.positionWS);
+    surface.depth = -TransformWorldToView(input.positionWS).z;
 	surface.color = base.rgb;
 	surface.alpha = base.a;
 	surface.metallic = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Metallic);
@@ -83,8 +87,12 @@ float4 LitPassFragment (Varyings input) : SV_TARGET0 {
 	#else
 		BRDF brdf = GetBRDF(surface);
 	#endif
-	float3 color = GetLighting(surface, brdf);
-    surface.color = color;
+    // float3 color = GetLighting(surface);
+    float3 color = GetLighting(surface, brdf, 1);
+            // GetLighting(surface,
+            //     brdf,
+            //     GetDirectionalLight(0, surface));
+        surface.color = color;
 
     // return base;
 	return float4(surface.color, surface.alpha);
