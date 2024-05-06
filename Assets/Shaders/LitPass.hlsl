@@ -6,6 +6,7 @@
 #include "../ShaderLibrary/Shadows.hlsl" 
 #include "../ShaderLibrary/Light.hlsl"
 #include "../ShaderLibrary/BRDF.hlsl"
+#include "../ShaderLibrary/GI.hlsl"
 #include "../ShaderLibrary/Lighting.hlsl"
 
 // cbuffer UnityPerMaterial {
@@ -34,6 +35,7 @@ struct Attributes {
     float3 positionOS: POSITION;
     float2 baseUV: TEXCOORD0;
     float3 normalOS : NORMAL;
+    GI_ATTRIBUTE_DATA
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -43,6 +45,7 @@ struct Varyings
     float3 positionWS : VAR_POSITION;
     float2 baseUV : VAR_BASE_UV;
     float3 normalWS : VAR_NORMAL;
+    GI_VARYINGS_DATA
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -56,6 +59,7 @@ Varyings LitPassVertex (Attributes input) {
     float4 baseST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseMap_ST);
 	output.baseUV = input.baseUV * baseST.xy + baseST.zw;
     output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+    TRANSFER_GI_DATA(input, output);
     return output;
 }
 
@@ -89,7 +93,9 @@ float4 LitPassFragment (Varyings input) : SV_TARGET0 {
 		BRDF brdf = GetBRDF(surface);
 	#endif
     // float3 color = GetLighting(surface);
-    float3 color = GetLighting(surface, brdf, 1);
+    GI gi = GetGI(GI_FRAGMENT_DATA(input));
+    float3 color = GetLighting(surface, brdf, gi);
+    // float3 color = GetLighting(surface, brdf, 1);
             // GetLighting(surface,
             //     brdf,
             //     GetDirectionalLight(0, surface));

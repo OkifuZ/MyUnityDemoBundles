@@ -64,6 +64,7 @@ public partial class CameraRenderer
         var drawingSettings = new DrawingSettings();
         drawingSettings.enableDynamicBatching = useDynamicBatching;
         drawingSettings.enableInstancing = useGPUInstancing;
+        drawingSettings.perObjectData = PerObjectData.Lightmaps;
 
 
         drawingSettings.sortingSettings = sortingSettings;
