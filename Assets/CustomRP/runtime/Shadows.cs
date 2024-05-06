@@ -49,6 +49,7 @@ public class Shadows
     struct ShadowedDirectionalLight
     {
         public int visibleLightIndex;
+        public float slopeScaleBias;
         public float nearPlaneOffset;
 
     }
@@ -71,7 +72,7 @@ public class Shadows
         ShadowedDirectionalLightCount = 0;
     }
 
-    public Vector2 ReserveDirectionalShadows(Light light, int visibleLightIndex) {
+    public Vector3 ReserveDirectionalShadows(Light light, int visibleLightIndex) {
         if (ShadowedDirectionalLightCount < maxShadowedDirectionalLightCount &&
             light.shadows != LightShadows.None && light.shadowStrength > 0f &&
             cullingResults.GetShadowCasterBounds(visibleLightIndex, out Bounds b)
@@ -81,11 +82,16 @@ public class Shadows
                 new ShadowedDirectionalLight
                 {
                     visibleLightIndex = visibleLightIndex,
+                    slopeScaleBias = light.shadowBias,
                     nearPlaneOffset = light.shadowNearPlane
                 };
-            return new Vector2(light.shadowStrength, settings.directional.cascadeCount * ShadowedDirectionalLightCount++);
+            return new Vector3(
+                light.shadowStrength,
+                settings.directional.cascadeCount * ShadowedDirectionalLightCount++,
+                light.shadowNormalBias
+            );
         }
-        return Vector2.zero;
+        return Vector3.zero;
     }
 
     public void Render()
@@ -208,10 +214,10 @@ public class Shadows
                 SetTileViewport(tileIndex, split, tileSize), split
             );
             buffer.SetViewProjectionMatrices(viewMatrix, projectionMatrix);
-            buffer.SetGlobalDepthBias(0f, 3f);
+            buffer.SetGlobalDepthBias(0f, light.slopeScaleBias);
             ExecuteBuffer();
             context.DrawShadows(ref shadowSettings);
-            buffer.SetGlobalDepthBias(0, 3f);
+            buffer.SetGlobalDepthBias(0f, 0f);
             // 2, 3
             // 0, 1
         }
@@ -220,7 +226,11 @@ public class Shadows
 
     void SetCascadeData(int index, Vector4 cullingSphere, float tileSize)
     {
-        cascadeData[index].x = 1f / cullingSphere.w;
+        float texelSize = 2f * cullingSphere.w / tileSize;
+        cascadeData[index] = new Vector4(
+            1f / cullingSphere.w,
+            texelSize * 1.4142136f
+        );
         cullingSphere.w *= cullingSphere.w;
         cascadeCullingSpheres[index] = cullingSphere;
     }

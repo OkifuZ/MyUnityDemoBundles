@@ -88,6 +88,7 @@ ShadowData GetShadowData (Surface surfaceWS) {
 struct DirectionalShadowData {
 	float strength;
 	int tileIndex;
+	float normalBias;
 };
 
 float SampleDirectionalShadowAtlas (float3 positionSTS) {
@@ -115,26 +116,27 @@ float FilterDirectionalShadow (float3 positionSTS) {
 }
 
 
-float GetDirectionalShadowAttenuation (DirectionalShadowData data, Surface surfaceWS, ShadowData global) {
-    if (data.strength <= 0.0) {
+float GetDirectionalShadowAttenuation (DirectionalShadowData directional, ShadowData global, Surface surfaceWS) {
+    if (directional.strength <= 0.0) {
 		return 1.0;
 	}
+	float3 normalBias = surfaceWS.normal * (directional.normalBias * _CascadeData[global.cascadeIndex].y);
 	float3 positionSTS = mul(
-		_DirectionalShadowMatrices[data.tileIndex],
-		float4(surfaceWS.position, 1.0)
+		_DirectionalShadowMatrices[directional.tileIndex],
+		float4(surfaceWS.position + normalBias, 1.0)
 	).xyz;
 	float shadow = FilterDirectionalShadow(positionSTS);
 	if (global.cascadeBlend < 1.0) {
 		positionSTS = mul(
-			_DirectionalShadowMatrices[data.tileIndex + 1],
-			float4(surfaceWS.position, 1.0)
+			_DirectionalShadowMatrices[directional.tileIndex + 1],
+			float4(surfaceWS.position + normalBias, 1.0)
 		).xyz;
 		shadow = lerp(
 			FilterDirectionalShadow(positionSTS), shadow, global.cascadeBlend
 		);
 	}
 	// return shadow;
-    return lerp(1.0, shadow, data.strength);
+    return lerp(1.0, shadow, directional.strength);
 }
 
 #endif
